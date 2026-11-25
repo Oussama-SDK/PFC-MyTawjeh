@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+backend/server/node_modules/
+
+# Build output
+dist/
+.vite/
+frontend/dist/
+
+# Databases
+*.sqlite
+*.sqlite3
+*.db
+backend/server/.mongodb/
+
+# Logs
+*.log
+backend.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+*.swp
+n o d e _ m o d u l e s /
+
+
+
+node_modules/
+
+# Environment secrets (use .env.example as template)
+.env
+!.env.example

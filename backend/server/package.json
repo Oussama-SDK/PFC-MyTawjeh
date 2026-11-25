@@ -1,0 +1,40 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "mongo": "powershell -ExecutionPolicy Bypass -File ./scripts/start-mongo-local.ps1",
+    "dev": "nodemon index.js",
+    "start": "node index.js",
+    "generate-secret": "node -e \"console.log(require('crypto').randomBytes(64).toString('hex'))\"",
+    "setup": "node -e \"const fs=require('fs');if(!fs.existsSync('.env')){fs.copyFileSync('.env.example','.env');console.log('✅ .env created');}else{console.log('⚠️  .env already exists, skipped');}\"",
+    "setup:force": "node -e \"const fs=require('fs');fs.copyFileSync('.env.example','.env');console.log('✅ .env replaced');\"",
+    "seed:concours": "node scripts/seedConcoursAnnales.js",
+    "seed:exercices": "node scripts/seedExercicesAnnales.js",
+    "seed:arabic": "node scripts/seedArabicContent.js",
+    "seed:all": "node scripts/seedConcoursAnnales.js && node scripts/seedExercicesAnnales.js && node scripts/seedArabicContent.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.101.0",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^7.5.1",
+    "helmet": "^7.2.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.6.3",
+    "mysql2": "^3.22.3",
+    "nodemailer": "^8.0.11",
+    "openai": "^6.38.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14",
+    "xlsx": "^0.18.5"
+  }
+}

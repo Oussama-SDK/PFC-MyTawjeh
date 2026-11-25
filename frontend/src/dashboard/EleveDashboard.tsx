@@ -1,0 +1,133 @@
+import { useState, useEffect } from 'react';
+import { User, Note, apiFetch } from './shared';
+import { useTranslation } from '../i18n';
+import NotesEvolutionChart from './NotesEvolutionChart';
+import { StatCard } from './Layout';
+import { IcNotes, IcRoadmap, IcChatbot, IcExercices } from './icons';
+
+// ─── ELEVE DASHBOARD ──────────────────────────────────────────────────────────
+function EleveDashboard({ user, setActive, onRetakeOnet, notifCount }: { user: User; setActive: (s: string) => void; onRetakeOnet?: () => void; notifCount: number }) {
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [showOnetPrompt, setShowOnetPrompt] = useState(false);
+  const [onetProfile, setOnetProfile] = useState<any>(null);
+  const [exercicesDone, setExercicesDone] = useState<number | null>(null);
+
+  useEffect(() => {
+    Promise.all([
+      apiFetch(`/eleves/${user.id}/notes`),
+      apiFetch('/onet/profile'),
+      apiFetch(`/exercices/resultats/${user.id}`),
+    ]).then(([notesData, onetData, exercicesData]: [any, any, any]) => {
+      setNotes(Array.isArray(notesData) ? notesData : []);
+      setOnetProfile(onetData?.profil || null);
+      setExercicesDone(Array.isArray(exercicesData) ? exercicesData.length : 0);
+      if (!onetData?.profil) setTimeout(() => setShowOnetPrompt(true), 800);
+    }).catch(() => {
+      setExercicesDone(0);
+      setTimeout(() => setShowOnetPrompt(true), 800);
+    });
+  }, [user.id]);
+
+  const moyenne = notes.length
+    ? (notes.reduce((s, n) => s + n.valeur * n.coefficient, 0) / notes.reduce((s, n) => s + n.coefficient, 0)).toFixed(1)
+    : '—';
+
+  const t = useTranslation();
+
+  const quick = [
+    { id: 'notes',     icon: <IcNotes size={22} />,     label: t.dashboard.menu.notes,    desc: `${notes.length} ${notes.length!==1 ? 'notes' : 'note'}`, color:'#7c3aed' },
+    { id: 'roadmap',   icon: <IcRoadmap size={22} />,   label: t.dashboard.menu.roadmap,   desc: t.dashboard.labels.generateRoadmap, color:'#2563eb' },
+    { id: 'chatbot',   icon: <IcChatbot size={22} />,   label: t.dashboard.menu.chatbot,   desc: t.dashboard.menu.chatbot, color:'#059669' },
+    { id: 'exercices', icon: <IcExercices size={22} />, label: t.dashboard.menu.exercices, desc: exercicesDone !== null ? `${exercicesDone} ${t.dashboard.labels.exercisesDone}` : t.dashboard.labels.loading, color:'#f59e0b' },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* O*NET prompt popup */}
+      {showOnetPrompt && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(15,32,68,0.65)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:999, padding:16 }}>
+          <div style={{ background:'#fff', borderRadius:20, padding:32, maxWidth:440, width:'100%', textAlign:'center', boxShadow:'0 20px 60px rgba(15,32,68,0.25)' }}>
+            <div style={{ fontSize:48, marginBottom:12 }}>🎯</div>
+            <h3 style={{ fontSize:20, fontWeight:800, color:'#0f2044', margin:'0 0 8px' }}>{t.dashboard.labels.onetPromptTitle}</h3>
+            <p style={{ color:'#64748b', fontSize:14, lineHeight:1.6, margin:'0 0 20px' }}>
+              {t.dashboard.labels.onetPromptDesc}
+            </p>
+            <button onClick={() => { setShowOnetPrompt(false); if(onRetakeOnet) onRetakeOnet(); }} style={{
+              width:'100%', padding:12, background:'linear-gradient(135deg,#7c3aed,#a855f7)', color:'#fff',
+              border:'none', borderRadius:10, fontSize:15, fontWeight:700, cursor:'pointer', marginBottom:10,
+            }}>{t.dashboard.labels.onetPromptStart}</button>
+            <button onClick={() => setShowOnetPrompt(false)} style={{ width:'100%', padding:10, background:'transparent', border:'1px solid #e2e8f0', borderRadius:10, fontSize:13, color:'#94a3b8', cursor:'pointer' }}>
+              {t.dashboard.labels.onetPromptLater}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Welcome */}
+      <div className="dash-hero" style={{ background: 'linear-gradient(135deg,#0f0c29,#302b63,#24243e)' }}>
+        <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-20" style={{ background: 'radial-gradient(circle,#a78bfa,transparent)' }} />
+        <div className="relative z-10">
+          <p className="text-white/60 text-sm font-medium mb-1">{t.dashboard.labels.hello} 👋</p>
+          <h2 className="text-2xl font-black mb-1">{user.nom}</h2>
+          <p className="text-white/60 text-sm">
+            {user.filiere === 'Autre' || user.filiere === 'أخرى' ? (user.filiere_autre || t.dashboard.labels.filiereOther) : (user.filiere || t.dashboard.labels.filiereUndefined)}
+            {user.niveau && ` · ${user.niveau}`}
+            {user.typeFormation && ` · ${user.typeFormation}`}
+            {user.niveauPostBac && ` · ${user.niveauPostBac}`}
+          </p>
+          {onetProfile && (
+            <div style={{ marginTop:10, display:'inline-flex', alignItems:'center', gap:6, background:'rgba(255,255,255,0.1)', borderRadius:8, padding:'5px 10px', fontSize:12 }}>
+              <span>🎯</span>
+              <span style={{ fontWeight:700 }}>{t.dashboard.profile.riasecBadgeLabel} : {onetProfile.primaryInterest} · {onetProfile.secondaryInterest} · {onetProfile.tertiaryInterest}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-2">
+        <StatCard icon="📊" label={t.dashboard.labels.averageGeneral} value={notes.length ? `${moyenne}/20` : '—'} color="bg-violet-50 text-violet-600" />
+        <StatCard icon="📝" label={t.dashboard.labels.notesRecorded} value={notes.length} color="bg-blue-50 text-blue-600" />
+        <StatCard icon="✅" label={t.dashboard.labels.exercisesDone} value={exercicesDone !== null ? exercicesDone : '—'} color="bg-emerald-50 text-emerald-600" />
+        <StatCard icon="🔔" label={t.dashboard.menu.notifications} value={notifCount > 0 ? notifCount : '✓'} color="bg-amber-50 text-amber-600" />
+      </div>
+
+      {/* Quick actions */}
+      <div>
+        <h3 className="dash-section-title">{t.dashboard.labels.quickAccess}</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {quick.map((q) => (
+            <button key={q.id} onClick={() => setActive(q.id)}
+              className="dash-card p-4 text-left cursor-pointer" style={{ borderTop: `3px solid ${q.color}` }}>
+              <span style={{ display:'flex', alignItems:'center', color: q.color, marginBottom:8 }}>{q.icon}</span>
+              <div style={{ fontSize:13, fontWeight:800, color:'#0f0c29', marginBottom:3 }}>{q.label}</div>
+              <div style={{ fontSize:11, color:'#94a3b8', fontWeight:500 }}>{q.desc}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Recent notes */}
+      {notes.length > 0 && (
+        <div>
+          <h3 className="dash-section-title">{t.dashboard.menu.notes} — {t.dashboard.labels.latestNotes}</h3>
+          <div className="dash-card-flat overflow-hidden">
+            {notes.slice(0, 4).map((note, i) => (
+              <div key={note.id} className={`flex items-center justify-between px-5 py-3.5 ${i < notes.slice(0, 4).length - 1 ? 'border-b border-gray-50' : ''}`}>
+                <span className="text-sm font-semibold text-gray-800">{note.matiere}</span>
+                <span className={`px-2.5 py-1 rounded-lg text-sm font-black ${note.valeur >= 14 ? 'text-emerald-600 bg-emerald-50' : note.valeur >= 10 ? 'text-blue-600 bg-blue-50' : 'text-rose-600 bg-rose-50'}`}>
+                  {note.valeur}/20
+                </span>
+              </div>
+            ))}
+            <button onClick={() => setActive('notes')} className="w-full text-center py-3 text-xs text-violet-600 font-bold hover:bg-violet-50 transition-colors">
+              {t.dashboard.labels.viewAllNotes}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default EleveDashboard;
