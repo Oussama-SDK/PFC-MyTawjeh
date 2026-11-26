@@ -90,11 +90,15 @@
 .ins-logo-icon {
   width: 38px; height: 38px;
   border-radius: 10px;
-  background: rgba(255,255,255,0.18);
+  background: #fff;
   border: 1px solid rgba(255,255,255,0.2);
+  overflow: hidden;
   display: flex; align-items: center; justify-content: center;
   font-weight: 900; font-size: 1.15rem; color: #fff;
   letter-spacing: -0.02em;
+}
+.ins-logo-icon img {
+  width: 100%; height: 100%; object-fit: contain; padding: 2px;
 }
 .ins-logo-text {
   font-weight: 900; font-size: 1.2rem;

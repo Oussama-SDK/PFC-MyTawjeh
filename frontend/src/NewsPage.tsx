@@ -38,8 +38,8 @@ export default function NewsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-                <span className="text-white font-black text-lg">M</span>
+              <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center overflow-hidden">
+                <img src="/logo-icon.png" alt="MyTawjeh" className="w-full h-full object-contain p-0.5" />
               </div>
               <h1 className="text-2xl font-black">
                 My<span className="text-purple-200">Tawjeh</span> {isRtl ? 'الأخبار' : 'Actualités'}

@@ -70,13 +70,6 @@ function Sidebar({
     : user.role === 'admin'      ? adminMenu(t)
     : parentMenu(t);
 
-  const roleGradients: Record<string, string> = {
-    eleve:      'linear-gradient(135deg,#7c3aed,#a855f7)',
-    professeur: 'linear-gradient(135deg,#1d4ed8,#3b82f6)',
-    admin:      'linear-gradient(135deg,#be123c,#e11d48)',
-    parent:     'linear-gradient(135deg,#047857,#10b981)',
-  };
-
   const menuSections: Record<string, string> = t.dashboard.sections;
 
   return (
@@ -87,11 +80,11 @@ function Sidebar({
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
               width: 36, height: 36, borderRadius: 10,
-              background: roleGradients[user.role],
+              background: '#fff', overflow: 'hidden',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               boxShadow: '0 4px 12px rgba(0,0,0,0.3)', flexShrink: 0,
             }}>
-              <span style={{ color: '#fff', fontWeight: 900, fontSize: 17 }}>M</span>
+              <img src="/logo-icon.png" alt="MyTawjeh" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 2 }} />
             </div>
             <span style={{ fontWeight: 900, fontSize: 17, color: '#fff', letterSpacing: '-0.01em' }}>
               My<span style={{ background: 'linear-gradient(135deg,#a78bfa,#ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Tawjeh</span>

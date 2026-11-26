@@ -447,7 +447,7 @@ export default function Inscription({
           <div className="ins-left-content">
             {/* Logo */}
             <div className="ins-logo">
-              <div className="ins-logo-icon">M</div>
+              <div className="ins-logo-icon"><img src="/logo-icon.png" alt="MyTawjeh" /></div>
               <span className="ins-logo-text">MyTawjeh</span>
             </div>
 

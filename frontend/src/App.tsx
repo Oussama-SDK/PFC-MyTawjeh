@@ -529,7 +529,7 @@ function Navbar({
 
           <a href="#top" onClick={(e) => { e.preventDefault(); scrollTo('#top', 'top'); }} className="flex items-center gap-2 flex-shrink-0">
 
-            <div className="w-9 h-9 rounded-xl btn-gradient flex items-center justify-center shadow-lg"><span className="text-white font-black text-lg">M</span></div>
+            <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-lg overflow-hidden"><img src="/logo-icon.png" alt="MyTawjeh" className="w-full h-full object-contain p-0.5" /></div>
 
             <span className={`font-black text-xl ${scrolled ? 'text-gray-900' : 'text-white'}`}>My<span className="gradient-text">Tawjeh</span></span>
 
@@ -3465,8 +3465,8 @@ function Footer({ t }: { t: Translation }) {
           {/* Brand col (2 cols wide) */}
           <div className="lg:col-span-2">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-9 h-9 rounded-xl btn-gradient flex items-center justify-center shadow-lg">
-                <span className="text-white font-black text-base">M</span>
+              <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-lg overflow-hidden">
+                <img src="/logo-icon.png" alt="MyTawjeh" className="w-full h-full object-contain p-0.5" />
               </div>
               <span className="font-black text-xl text-white">My<span className="gradient-text">Tawjeh</span></span>
             </div>
@@ -3624,7 +3624,7 @@ function LoginModal({ isOpen, onClose, t, onSwitchToSignup }: {
 
             <div className="flex items-center gap-2 mb-8">
 
-              <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center shadow"><span className="text-white font-black text-lg">M</span></div>
+              <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow overflow-hidden"><img src="/logo-icon.png" alt="MyTawjeh" className="w-full h-full object-contain p-0.5" /></div>
 
               <span className="font-black text-xl tracking-tight">MyTawjeh</span>
 
