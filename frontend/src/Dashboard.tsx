@@ -130,6 +130,7 @@ export default function Dashboard() {
         case 'dashboard':      return <ParentDashboard user={user} />;
         case 'actualites':     return <ActualitesPage />;
         case 'notifications':  return <NotificationsPage user={user} onUpdateCount={setNotifCount} />;
+        case 'chatbot':        return <ChatbotPage user={user} />;
         case 'bac':            return <BacPathDashPage />;
         case 'formations':     return <FormationsDashPage />;
         case 'privateSchools': return <PrivateSchoolsPage />;
