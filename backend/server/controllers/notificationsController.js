@@ -2,6 +2,11 @@ const Notification = require('../models/Notification');
 const Eleve      = require('../models/Eleve');
 const Professeur = require('../models/Professeur');
 const Parent     = require('../models/Parent');
+const { canAccessEleve } = require('../middleware/access');
+
+// A user may act on their own notifications, or on those of a student they can access
+const canAccessNotifsOf = async (user, ownerId) =>
+  String(user.id) === String(ownerId) || canAccessEleve(user, ownerId);
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
@@ -11,6 +16,7 @@ const getNotifications = async (req, res) => {
   const offset = parseInt(req.query.offset, 10) || 0;
 
   const id = req.params.eleveId;
+  if (!(await canAccessNotifsOf(req.user, id))) return res.status(403).json({ message: 'Accès refusé' });
   const notifs = await Notification.find({
     $or: [{ eleveId: id }, { recipientId: id }],
   })
@@ -98,8 +104,11 @@ const createBulkNotification = async (req, res) => {
 
 const markRead = async (req, res) => {
   try {
+    const notif = await Notification.findById(req.params.id).select('eleveId recipientId').lean();
+    if (!notif) return res.status(404).json({ message: 'Notification introuvable' });
+    const owner = notif.recipientId || notif.eleveId;
+    if (!(await canAccessNotifsOf(req.user, owner))) return res.status(403).json({ message: 'Accès refusé' });
     const updated = await Notification.findByIdAndUpdate(req.params.id, { lu: true }, { new: true });
-    if (!updated) return res.status(404).json({ message: 'Notification introuvable' });
     res.json(updated);
   } catch (e) {
     res.status(500).json({ message: e.message });
@@ -108,8 +117,11 @@ const markRead = async (req, res) => {
 
 const markUnread = async (req, res) => {
   try {
+    const notif = await Notification.findById(req.params.id).select('eleveId recipientId').lean();
+    if (!notif) return res.status(404).json({ message: 'Notification introuvable' });
+    const owner = notif.recipientId || notif.eleveId;
+    if (!(await canAccessNotifsOf(req.user, owner))) return res.status(403).json({ message: 'Accès refusé' });
     const updated = await Notification.findByIdAndUpdate(req.params.id, { lu: false }, { new: true });
-    if (!updated) return res.status(404).json({ message: 'Notification introuvable' });
     res.json(updated);
   } catch (e) {
     res.status(500).json({ message: e.message });

@@ -29,6 +29,10 @@ const validateSchema = (schema) => (req, res, next) => {
         errors.push({ field, message: `${field} doit contenir au moins ${rules.minLength} caractères` });
       }
 
+      if (rules.maxLength && value.length > rules.maxLength) {
+        errors.push({ field, message: `${field} ne doit pas dépasser ${rules.maxLength} caractères` });
+      }
+
       if (rules.email) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(value)) {

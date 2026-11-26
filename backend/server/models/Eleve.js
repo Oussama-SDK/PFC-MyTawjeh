@@ -4,7 +4,6 @@ const eleveSchema = new mongoose.Schema({
   nom: { type: String, required: true },
   email: { type: String, unique: true, required: true, lowercase: true },
   motDePasse: { type: String, required: true },
-  motDePasseClair: { type: String },
   niveau: { type: String, required: true },
   filiere: String,
   filiere_autre: String,

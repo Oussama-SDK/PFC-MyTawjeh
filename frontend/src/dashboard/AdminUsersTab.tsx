@@ -56,10 +56,10 @@ export default function AdminUsersTab({ data, onRefresh, initialRoleFilter = '' 
   const [editMode, setEditMode] = useState(false);
   const [editForm, setEditForm] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
-  const [passwordVisible, setPasswordVisible] = useState(false);
-  const [passwordValue, setPasswordValue] = useState<string | null>(null);
-  const [passwordLoading, setPasswordLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
+  // Passwords are stored hashed: the admin can set a new one, never read the old one
+  const [newPassword, setNewPassword] = useState('');
+  const [resettingPassword, setResettingPassword] = useState(false);
+  const [passwordMsg, setPasswordMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   const allUsers = [
     ...data.eleves.map(u => ({ ...u, role: 'eleve' as const })),
@@ -80,9 +80,8 @@ export default function AdminUsersTab({ data, onRefresh, initialRoleFilter = '' 
   const openUser = (user: any) => {
     setSelectedUser(user);
     setEditMode(false);
-    setPasswordVisible(false);
-    setPasswordValue(null);
-    setCopied(false);
+    setNewPassword('');
+    setPasswordMsg(null);
     const fields = ROLE_FIELDS[user.role] ?? ['nom', 'email'];
     const form: Record<string, string> = {};
     fields.forEach(f => { form[f] = user[f] ?? ''; });
@@ -92,32 +91,29 @@ export default function AdminUsersTab({ data, onRefresh, initialRoleFilter = '' 
   const closeModal = () => {
     setSelectedUser(null);
     setEditMode(false);
-    setPasswordVisible(false);
-    setPasswordValue(null);
-    setCopied(false);
+    setNewPassword('');
+    setPasswordMsg(null);
   };
 
-  const togglePassword = async () => {
-    if (!passwordVisible && passwordValue === null) {
-      setPasswordLoading(true);
-      try {
-        const data = await apiFetch(`/admin/users/${selectedUser.role}/${selectedUser._id}/password`);
-        setPasswordValue(data.motDePasse);
-      } catch (e: any) {
-        alert(e.message);
-        return;
-      } finally {
-        setPasswordLoading(false);
-      }
+  const resetPassword = async () => {
+    if (newPassword.length < 6) {
+      setPasswordMsg({ ok: false, text: ta.passwordTooShort || 'Au moins 6 caractères requis' });
+      return;
     }
-    setPasswordVisible(v => !v);
-  };
-
-  const copyPassword = async () => {
-    if (!passwordValue) return;
-    await navigator.clipboard.writeText(passwordValue);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setResettingPassword(true);
+    setPasswordMsg(null);
+    try {
+      await apiFetch(`/admin/users/${selectedUser.role}/${selectedUser._id}/password`, {
+        method: 'PUT',
+        body: JSON.stringify({ newPassword }),
+      });
+      setNewPassword('');
+      setPasswordMsg({ ok: true, text: ta.passwordResetDone || 'Mot de passe réinitialisé. Communiquez-le à l\'utilisateur.' });
+    } catch (e: any) {
+      setPasswordMsg({ ok: false, text: e.message });
+    } finally {
+      setResettingPassword(false);
+    }
   };
 
   const handleToggleEdit = () => {
@@ -355,30 +351,27 @@ export default function AdminUsersTab({ data, onRefresh, initialRoleFilter = '' 
                   {ta.passwordLabel || 'Mot de passe'}
                 </label>
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 font-mono text-sm text-gray-700 overflow-x-auto whitespace-nowrap">
-                    {passwordLoading
-                      ? <span className="text-gray-400 text-xs">{ta.passwordLoading || 'Chargement...'}</span>
-                      : passwordVisible && passwordValue
-                        ? passwordValue
-                        : '●●●●●●●●●●●●'}
-                  </div>
+                  <input
+                    type="text"
+                    value={newPassword}
+                    onChange={(e) => { setNewPassword(e.target.value); setPasswordMsg(null); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !resettingPassword) resetPassword(); }}
+                    placeholder={ta.newPasswordPlaceholder || 'Nouveau mot de passe (min. 6 caractères)'}
+                    maxLength={128}
+                    autoComplete="new-password"
+                    className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 font-mono text-sm text-gray-700"
+                  />
                   <button
-                    onClick={togglePassword}
-                    title={passwordVisible ? (ta.passwordHide || 'Masquer') : (ta.passwordShow || 'Afficher')}
-                    className="shrink-0 px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 text-sm transition-colors"
+                    onClick={resetPassword}
+                    disabled={resettingPassword || !newPassword}
+                    className="shrink-0 px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 text-sm font-semibold transition-colors disabled:opacity-50"
                   >
-                    {passwordVisible ? '🙈' : '👁'}
+                    {resettingPassword ? '…' : (ta.resetPassword || 'Réinitialiser')}
                   </button>
-                  {passwordVisible && passwordValue && (
-                    <button
-                      onClick={copyPassword}
-                      title={ta.copyPassword || 'Copier'}
-                      className={`shrink-0 px-3 py-2 rounded-lg border text-sm font-semibold transition-colors ${copied ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'}`}
-                    >
-                      {copied ? '✓' : '⎘'}
-                    </button>
-                  )}
                 </div>
+                <p className={`text-xs mt-1.5 ${passwordMsg ? (passwordMsg.ok ? 'text-emerald-600' : 'text-red-600') : 'text-gray-400'}`}>
+                  {passwordMsg ? passwordMsg.text : (ta.passwordHashedNote || 'Les mots de passe sont chiffrés et ne peuvent pas être affichés.')}
+                </p>
               </div>
             </div>
 

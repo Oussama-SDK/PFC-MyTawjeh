@@ -8,11 +8,13 @@ const Admine = require('../models/Admine');
 const ProfilOnet = require('../models/ProfilOnet');
 
 const MODELS = { eleve: Eleve, parent: Parent, professeur: Professeur, admin: Admine };
+// Roles anyone can sign up for — admin accounts are created by seed scripts only
+const SELF_REGISTER_MODELS = { eleve: Eleve, parent: Parent, professeur: Professeur };
 
 // ── Register ──────────────────────────────────────────────────────────────────
 const register = async (req, res) => {
   const { role, nom, email, motDePasse, niveau, filiere, filiere_autre, ville, typeFormation, niveauPostBac, niveauPostBac_autre, specialite, eleveId } = req.body;
-  const Model = MODELS[role];
+  const Model = SELF_REGISTER_MODELS[role];
   if (!Model) return res.status(400).json({ message: 'Rôle invalide' });
   try {
     const hash = await bcrypt.hash(motDePasse, 10);
@@ -20,7 +22,7 @@ const register = async (req, res) => {
                 : role === 'parent'     ? { eleveIds: [] }
                 : role === 'professeur' ? { specialite }
                 : {};
-    const user = await Model.create({ nom, email, motDePasse: hash, motDePasseClair: motDePasse, ...extra });
+    const user = await Model.create({ nom, email, motDePasse: hash, ...extra });
     res.status(201).json({ message: 'Compte créé', id: user._id });
   } catch (e) {
     res.status(400).json({ message: e.message });
@@ -50,10 +52,8 @@ const login = async (req, res) => {
     } catch (_) {}
   }
 
-  if (!found) return res.status(404).json({ message: 'Aucun compte trouvé avec cet email' });
-
-  const valid = await bcrypt.compare(motDePasse, found.motDePasse);
-  if (!valid) return res.status(401).json({ message: 'Mot de passe incorrect' });
+  const valid = found && await bcrypt.compare(motDePasse, found.motDePasse);
+  if (!valid) return res.status(401).json({ message: 'Email ou mot de passe incorrect' });
 
   const token = jwt.sign(
     { id: found._id, role: foundRole, nom: found.nom, email },
@@ -103,7 +103,7 @@ const changePassword = async (req, res) => {
     if (!valid) return res.status(401).json({ message: 'Mot de passe actuel incorrect' });
 
     const hash = await bcrypt.hash(newPassword, 10);
-    await Model.findByIdAndUpdate(id, { motDePasse: hash, motDePasseClair: newPassword });
+    await Model.findByIdAndUpdate(id, { motDePasse: hash });
     res.json({ message: 'Mot de passe modifié avec succès' });
   } catch (e) {
     res.status(500).json({ message: e.message });
@@ -116,9 +116,11 @@ const linkStudent = async (req, res) => {
   const { id, role } = req.user;
 
   if (role !== 'parent') return res.status(403).json({ message: 'Réservé aux parents' });
+  if (typeof eleveEmail !== 'string' || !eleveEmail.trim())
+    return res.status(400).json({ message: "Email de l'élève requis" });
 
   try {
-    const eleve = await Eleve.findOne({ email: eleveEmail });
+    const eleve = await Eleve.findOne({ email: eleveEmail.trim() });
     if (!eleve) return res.status(404).json({ message: 'Aucun étudiant trouvé avec cet email' });
 
     const parent = await Parent.findById(id);
@@ -131,7 +133,7 @@ const linkStudent = async (req, res) => {
       { new: true }
     );
     const allEleves = await Eleve.find({ _id: { $in: updatedParent.eleveIds } })
-      .select('-motDePasse').lean();
+      .select('-motDePasse -motDePasseClair').lean();
     res.json({
       message: 'Étudiant lié avec succès',
       eleve: { id: eleve._id, nom: eleve.nom, email: eleve.email, niveau: eleve.niveau, filiere: eleve.filiere },
@@ -151,7 +153,7 @@ const getLinkedStudent = async (req, res) => {
     const parent = await Parent.findById(id);
     if (!parent?.eleveIds?.length) return res.json({ eleves: [] });
 
-    const eleves = await Eleve.find({ _id: { $in: parent.eleveIds } }).select('-motDePasse').lean();
+    const eleves = await Eleve.find({ _id: { $in: parent.eleveIds } }).select('-motDePasse -motDePasseClair').lean();
     res.json({ eleves, eleve: eleves[0] ?? null });
   } catch (e) {
     res.status(500).json({ message: e.message });
@@ -163,7 +165,8 @@ const unlinkStudent = async (req, res) => {
   if (role !== 'parent') return res.status(403).json({ message: 'Réservé aux parents' });
 
   const { eleveId } = req.body;
-  if (!eleveId) return res.status(400).json({ message: 'eleveId requis' });
+  if (typeof eleveId !== 'string' || !mongoose.isValidObjectId(eleveId))
+    return res.status(400).json({ message: 'eleveId requis' });
 
   try {
     const oid = new mongoose.Types.ObjectId(eleveId);

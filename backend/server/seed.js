@@ -46,18 +46,17 @@ async function seed() {
       nom: 'Admin Principal',
       email: 'admin@mowajih.ma',
       motDePasse: hash,
-      motDePasseClair: 'password',
     });
     console.log('✅ Admin:', admin.email);
 
     // ── Professeurs ────────────────────────────────────────────────────────
     const [profMath, profPhysique, profSVT, profFrancais, profAnglais, profEco] = await Professeur.insertMany([
-      { nom: 'Hassan Benkirane',  email: 'hassan@mowajih.ma',   motDePasse: hash, motDePasseClair: 'password', specialite: 'Mathématiques' },
-      { nom: 'Nadia Cherkaoui',   email: 'nadia@mowajih.ma',    motDePasse: hash, motDePasseClair: 'password', specialite: 'Physique-Chimie' },
-      { nom: 'Karim El Fassi',    email: 'karim@mowajih.ma',    motDePasse: hash, motDePasseClair: 'password', specialite: 'Sciences de la Vie et de la Terre' },
-      { nom: 'Samira Lahlou',     email: 'samira@mowajih.ma',   motDePasse: hash, motDePasseClair: 'password', specialite: 'Français & Littérature' },
-      { nom: 'Omar Tazi',         email: 'omar@mowajih.ma',     motDePasse: hash, motDePasseClair: 'password', specialite: 'Anglais' },
-      { nom: 'Leila Mansouri',    email: 'leila@mowajih.ma',    motDePasse: hash, motDePasseClair: 'password', specialite: 'Sciences Économiques' },
+      { nom: 'Hassan Benkirane',  email: 'hassan@mowajih.ma',   motDePasse: hash, specialite: 'Mathématiques' },
+      { nom: 'Nadia Cherkaoui',   email: 'nadia@mowajih.ma',    motDePasse: hash, specialite: 'Physique-Chimie' },
+      { nom: 'Karim El Fassi',    email: 'karim@mowajih.ma',    motDePasse: hash, specialite: 'Sciences de la Vie et de la Terre' },
+      { nom: 'Samira Lahlou',     email: 'samira@mowajih.ma',   motDePasse: hash, specialite: 'Français & Littérature' },
+      { nom: 'Omar Tazi',         email: 'omar@mowajih.ma',     motDePasse: hash, specialite: 'Anglais' },
+      { nom: 'Leila Mansouri',    email: 'leila@mowajih.ma',    motDePasse: hash, specialite: 'Sciences Économiques' },
     ]);
     console.log('✅ 6 professeurs créés');
 
@@ -247,7 +246,6 @@ async function seed() {
         nom: 'Yassine Benali',
         email: 'yassine@test.ma',
         motDePasse: hash,
-        motDePasseClair: 'password',
         niveau: '2bac',
         filiere: 'Sciences Maths',
         ville: 'Casablanca',
@@ -264,7 +262,6 @@ async function seed() {
         nom: 'Fatima Zahra Elhaddad',
         email: 'fatima@test.ma',
         motDePasse: hash,
-        motDePasseClair: 'password',
         niveau: '2bac',
         filiere: 'Sciences Physiques',
         ville: 'Rabat',
@@ -281,7 +278,6 @@ async function seed() {
         nom: 'Amine Kettani',
         email: 'amine@test.ma',
         motDePasse: hash,
-        motDePasseClair: 'password',
         niveau: '1bac',
         filiere: 'Sciences Expérimentales',
         ville: 'Fès',
@@ -298,7 +294,6 @@ async function seed() {
         nom: 'Sara Moussaoui',
         email: 'sara@test.ma',
         motDePasse: hash,
-        motDePasseClair: 'password',
         niveau: '2bac',
         filiere: 'Sciences Économiques',
         ville: 'Marrakech',
@@ -315,7 +310,6 @@ async function seed() {
         nom: 'Khalid Oumzil',
         email: 'khalid@test.ma',
         motDePasse: hash,
-        motDePasseClair: 'password',
         niveau: 'tronc commun',
         filiere: 'Sciences',
         ville: 'Agadir',
@@ -331,7 +325,6 @@ async function seed() {
         nom: 'Nour El Houda Ait Brahim',
         email: 'nour@test.ma',
         motDePasse: hash,
-        motDePasseClair: 'password',
         niveau: '2bac',
         filiere: 'Lettres et Sciences Humaines',
         ville: 'Tanger',
@@ -348,7 +341,6 @@ async function seed() {
         nom: 'Hamza Bouchikhi',
         email: 'hamza@test.ma',
         motDePasse: hash,
-        motDePasseClair: 'password',
         niveau: '1bac',
         filiere: 'Sciences Maths A',
         ville: 'Meknès',
@@ -364,7 +356,6 @@ async function seed() {
         nom: 'Imane Berrada',
         email: 'imane@test.ma',
         motDePasse: hash,
-        motDePasseClair: 'password',
         niveau: '2bac',
         filiere: 'Sciences de la Vie et de la Terre',
         ville: 'Oujda',
@@ -527,10 +518,10 @@ async function seed() {
 
     // ── Parents ────────────────────────────────────────────────────────────
     await Parent.insertMany([
-      { nom: 'Mohamed Benali',       email: 'parent.yassine@test.ma', motDePasse: hash, motDePasseClair: 'password', eleveIds: [eleves[0]._id] },
-      { nom: 'Khadija Elhaddad',     email: 'parent.fatima@test.ma',  motDePasse: hash, motDePasseClair: 'password', eleveIds: [eleves[1]._id] },
-      { nom: 'Abdelaziz Kettani',    email: 'parent.amine@test.ma',   motDePasse: hash, motDePasseClair: 'password', eleveIds: [eleves[2]._id] },
-      { nom: 'Rachid Oumzil',        email: 'parent.khalid@test.ma',  motDePasse: hash, motDePasseClair: 'password', eleveIds: [eleves[4]._id] },
+      { nom: 'Mohamed Benali',       email: 'parent.yassine@test.ma', motDePasse: hash, eleveIds: [eleves[0]._id] },
+      { nom: 'Khadija Elhaddad',     email: 'parent.fatima@test.ma',  motDePasse: hash, eleveIds: [eleves[1]._id] },
+      { nom: 'Abdelaziz Kettani',    email: 'parent.amine@test.ma',   motDePasse: hash, eleveIds: [eleves[2]._id] },
+      { nom: 'Rachid Oumzil',        email: 'parent.khalid@test.ma',  motDePasse: hash, eleveIds: [eleves[4]._id] },
     ]);
     console.log('✅ 4 parents créés');
 

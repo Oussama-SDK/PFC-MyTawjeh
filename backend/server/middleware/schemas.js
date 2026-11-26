@@ -3,8 +3,8 @@ const schemas = {
   // Auth schemas
   register: {
     email: { type: 'string', required: true, email: true },
-    motDePasse: { type: 'string', required: true, minLength: 6 },
-    role: { type: 'string', required: true, enum: ['eleve', 'professeur', 'parent', 'admin'] },
+    motDePasse: { type: 'string', required: true, minLength: 6, maxLength: 128 },
+    role: { type: 'string', required: true, enum: ['eleve', 'professeur', 'parent'] }, // admins are never self-registered
     nom: { type: 'string', required: true, minLength: 2 },
   },
 
@@ -15,7 +15,12 @@ const schemas = {
 
   changePassword: {
     currentPassword: { type: 'string', required: true },
-    newPassword: { type: 'string', required: true, minLength: 6 },
+    newPassword: { type: 'string', required: true, minLength: 6, maxLength: 128 },
+  },
+
+  // Admin resets a user's password
+  resetPassword: {
+    newPassword: { type: 'string', required: true, minLength: 6, maxLength: 128 },
   },
 
   // Note schema
@@ -70,7 +75,7 @@ const schemas = {
   contact: {
     nom: { type: 'string', required: true, minLength: 2 },
     email: { type: 'string', required: true, email: true },
-    message: { type: 'string', required: true, minLength: 10 },
+    message: { type: 'string', required: true, minLength: 10, maxLength: 5000 },
   },
 };
 

@@ -1,39 +1,40 @@
-// Centralized error handling middleware
+// Centralized error handling middleware (Express 5 forwards async errors here)
 const errorHandler = (err, req, res, next) => {
   console.error('❌ Error:', err.message);
 
-  // Sequelize validation errors
-  if (err.name === 'SequelizeValidationError') {
+  // Mongoose: document failed schema validation
+  if (err.name === 'ValidationError') {
     return res.status(400).json({
-      message: 'Validation error',
-      errors: err.errors.map(e => ({ field: e.path, message: e.message }))
+      message: 'Données invalides',
+      errors: Object.values(err.errors || {}).map(e => ({ field: e.path, message: e.message })),
     });
   }
 
-  // JWT errors
+  // Mongoose: malformed id or value of the wrong type (e.g. /notes/not-an-id)
+  if (err.name === 'CastError') {
+    return res.status(400).json({ message: 'Identifiant ou valeur invalide' });
+  }
+
+  // MongoDB: unique index violation (e.g. email already used)
+  if (err.code === 11000) {
+    return res.status(409).json({ message: 'Cette valeur existe déjà' });
+  }
+
   if (err.name === 'JsonWebTokenError') {
-    return res.status(401).json({ message: 'Invalid token' });
+    return res.status(401).json({ message: 'Token invalide' });
   }
-
   if (err.name === 'TokenExpiredError') {
-    return res.status(401).json({ message: 'Token expired' });
+    return res.status(401).json({ message: 'Token expiré' });
   }
 
-  // Database errors
-  if (err.name === 'SequelizeDatabaseError') {
-    return res.status(500).json({ message: 'Database error' });
+  // Malformed JSON body
+  if (err.type === 'entity.parse.failed') {
+    return res.status(400).json({ message: 'JSON invalide' });
   }
 
-  // Default error
+  // Anything else: don't leak internal details for server errors
   const status = err.status || 500;
-  const message = err.message || 'Internal server error';
-  
-  res.status(status).json({ message });
+  res.status(status).json({ message: status < 500 ? err.message : 'Erreur interne du serveur' });
 };
 
-// Async error wrapper
-const asyncHandler = (fn) => (req, res, next) => {
-  Promise.resolve(fn(req, res, next)).catch(next);
-};
-
-module.exports = { errorHandler, asyncHandler };
+module.exports = { errorHandler };

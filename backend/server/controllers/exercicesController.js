@@ -107,7 +107,11 @@ const updateExercice = async (req, res) => {
     if (req.user.role === 'professeur' && !isOwner)
       return res.status(403).json({ message: 'Vous ne pouvez modifier que vos propres exercices' });
 
-    const updated = await Exercice.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    // Approval goes through PATCH /approve (admin) and the owner never changes on edit
+    const { isApproved, professeurId, _id, ...changes } = req.body;
+    // A professor's edit goes back to the admin for review, like a new exercise
+    if (req.user.role === 'professeur') changes.isApproved = false;
+    const updated = await Exercice.findByIdAndUpdate(req.params.id, changes, { new: true, runValidators: true });
     res.json(updated);
   } catch (e) {
     res.status(400).json({ message: e.message });
