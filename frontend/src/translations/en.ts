@@ -649,6 +649,10 @@ export const en: Translation = {
         alertsTitle: '⚠️ Points of attention',
         adviceTitle: '💡 Advice',
         fetchError: 'Unable to load roadmap.',
+        careerLabel: '🎯 Which career or field interests you?',
+        careerPlaceholder: 'E.g. Civil engineer, Medicine, Computer science…',
+        careerButton: '✨ Generate my roadmap',
+        careerHint: 'Or use "Regenerate" / "Generate" without typing: the AI will choose from your RIASEC profile and grades.',
       },
       profile: {
         passwordTooShort: 'At least 6 characters required',

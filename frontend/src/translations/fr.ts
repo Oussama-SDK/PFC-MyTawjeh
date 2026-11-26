@@ -1177,6 +1177,10 @@ aiEcosystem: {
         alertsTitle: '⚠️ Points d\'attention',
         adviceTitle: '💡 Conseils',
         fetchError: 'Impossible de charger le roadmap.',
+        careerLabel: '🎯 Quel métier ou domaine vous intéresse ?',
+        careerPlaceholder: 'Ex : Ingénieur en génie civil, Médecine, Informatique…',
+        careerButton: '✨ Générer mon roadmap',
+        careerHint: "Ou utilisez « Régénérer » / « Générer » sans rien saisir : l'IA choisira selon votre profil RIASEC et vos notes.",
       },
       profile: {
         passwordTooShort: 'Au moins 6 caractères requis',

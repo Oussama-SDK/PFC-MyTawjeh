@@ -111,7 +111,12 @@ const executeWithFallback = async (providerName, executeFunc) => {
 // ROADMAP GENERATION
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-const generateRoadmap = async (eleve, notes, onetProfil = null) => {
+const generateRoadmap = async (eleve, notes, onetProfil = null, metierCible = '') => {
+  // Career/domain typed by the student takes priority over the RIASEC dream job
+  const objectifText = metierCible
+    ? `Métier ou domaine choisi par l'élève: ${metierCible}. Construis le roadmap pour CE choix (signale dans "alertes" s'il correspond mal à son profil).`
+    : '';
+
   const notesText = notes.length
     ? notes.map(n => `${n.matiere}: ${n.valeur}/20 (coeff ${n.coefficient})`).join(', ')
     : 'Aucune note disponible';
@@ -125,7 +130,7 @@ const generateRoadmap = async (eleve, notes, onetProfil = null) => {
     ? `Profil RIASEC: ${onetProfil.primaryInterest} (primaire), ${onetProfil.secondaryInterest} (secondaire), ${onetProfil.tertiaryInterest} (tertiaire). Job Zone visée: ${onetProfil.jobZone}/5.${onetProfil.dreamJob ? ` Métier rêvé: ${onetProfil.dreamJob}.` : ''}${onetProfil.dreamUni ? ` Université rêvée: ${onetProfil.dreamUni}.` : ''}`
     : 'Profil RIASEC non disponible.';
 
-  const prompt = `Tu es un conseiller d'orientation académique expert du système marocain (Bac, CPGE, BTS, universités publiques, grandes écoles comme ENSA, ENCG, EHTP, EMI, ISCAE). Génère un roadmap professionnel personnalisé en JSON pour cet étudiant:\n\nNom: ${eleve.nom}\nNiveau: ${eleve.niveau}\nFilière: ${eleve.filiere || 'Non définie'}\nVille: ${eleve.ville || 'Non précisée'}\nMoyenne générale: ${moyenne ? moyenne + '/20' : 'Non disponible'}\nNotes détaillées: ${notesText}\n${onetText}\n\nRéponds UNIQUEMENT avec un JSON valide sans markdown:\n{"metier":"...","description":"...","etapes":["...","...","...","..."],"matieresCles":["...","..."],"universites":["...","..."],"conseils":"...","alertes":["..."]}`;
+  const prompt = `Tu es un conseiller d'orientation académique expert du système marocain (Bac, CPGE, BTS, universités publiques, grandes écoles comme ENSA, ENCG, EHTP, EMI, ISCAE). Génère un roadmap professionnel personnalisé en JSON pour cet étudiant:\n\nNom: ${eleve.nom}\nNiveau: ${eleve.niveau}\nFilière: ${eleve.filiere || 'Non définie'}\nVille: ${eleve.ville || 'Non précisée'}\nMoyenne générale: ${moyenne ? moyenne + '/20' : 'Non disponible'}\nNotes détaillées: ${notesText}\n${onetText}\n${objectifText}\n\nRéponds UNIQUEMENT avec un JSON valide sans markdown:\n{"metier":"...","description":"...","etapes":["...","...","...","..."],"matieresCles":["...","..."],"universites":["...","..."],"conseils":"...","alertes":["..."]}`;
 
   const primaryProvider = getPrimaryProvider();
   

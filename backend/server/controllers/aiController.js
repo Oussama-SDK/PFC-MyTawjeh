@@ -33,7 +33,12 @@ const generateRoadmapHandler = async (req, res) => {
       onetProfil = await ProfilOnet.findOne({ eleveId: eleve._id }).lean();
     } catch (_) {}
 
-    const result = await generateRoadmap(eleve, notes, onetProfil);
+    // Optional career/domain typed by the student at the top of the Roadmap page
+    const metierCible = typeof req.body.metierCible === 'string'
+      ? req.body.metierCible.trim().slice(0, 100)
+      : '';
+
+    const result = await generateRoadmap(eleve, notes, onetProfil, metierCible);
 
     const roadmap = await Roadmap.create({
       eleveId: eleve._id,

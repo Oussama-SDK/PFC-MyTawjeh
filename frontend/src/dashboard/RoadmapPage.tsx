@@ -10,6 +10,7 @@ function RoadmapPage({ user }: { user: User }) {
   const [fetchError, setFetchError] = useState('');
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState('');
+  const [metierCible, setMetierCible] = useState('');
 
   useEffect(() => {
     apiFetch(`/roadmap/${user.id}`)
@@ -33,7 +34,7 @@ function RoadmapPage({ user }: { user: User }) {
     try {
       const data = await apiFetch('/roadmap/generate', {
         method: 'POST',
-        body: JSON.stringify({}),
+        body: JSON.stringify({ metierCible: metierCible.trim() }),
       });
       if (data?.result) {
         setRoadmap(data.result);
@@ -46,6 +47,41 @@ function RoadmapPage({ user }: { user: User }) {
     }
   };
 
+  // Top bar: the student types the career/domain they want a roadmap for
+  const careerBar = (
+    <div className="dash-card p-4" style={{ marginBottom:16, borderColor:'rgba(124,58,237,0.15)', textAlign:'start' }}>
+      <label style={{ display:'block', fontSize:13, fontWeight:800, color:'#0f0c29', marginBottom:8 }}>
+        {tr.careerLabel}
+      </label>
+      <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+        <input
+          value={metierCible}
+          onChange={(e) => setMetierCible(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !generating && metierCible.trim()) handleGenerate(); }}
+          placeholder={tr.careerPlaceholder}
+          maxLength={100}
+          disabled={generating}
+          style={{
+            flex:1, minWidth:220, padding:'10px 14px', fontSize:13.5,
+            border:'1.5px solid rgba(124,58,237,0.25)', borderRadius:10, outline:'none', background:'#fff',
+          }}
+        />
+        <button
+          onClick={handleGenerate}
+          disabled={generating || !metierCible.trim()}
+          style={{
+            padding:'10px 18px', border:'none', borderRadius:10, fontSize:13, fontWeight:800, color:'#fff',
+            background: generating || !metierCible.trim() ? '#c4b5fd' : 'linear-gradient(135deg,#7c3aed,#a855f7)',
+            cursor: generating || !metierCible.trim() ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {generating ? tr.generating : tr.careerButton}
+        </button>
+      </div>
+      <p style={{ fontSize:11.5, color:'#94a3b8', marginTop:6 }}>{tr.careerHint}</p>
+    </div>
+  );
+
   if (fetching) return (
     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
       <div className="dash-skeleton" style={{ height:80, borderRadius:14 }} />
@@ -54,6 +90,8 @@ function RoadmapPage({ user }: { user: User }) {
   );
 
   if (fetchError || !roadmap) return (
+    <div>
+    {careerBar}
     <div className="dash-empty" style={{ background:'rgba(255,255,255,0.9)', borderRadius:20, padding:'60px 32px', textAlign:'center' }}>
       <div className="dash-empty-icon">🧭</div>
       <p className="dash-empty-title">{fetchError || tr.noRoadmapTitle}</p>
@@ -74,6 +112,7 @@ function RoadmapPage({ user }: { user: User }) {
       >
         {generating ? tr.generating : tr.generateNewButton}
       </button>
+    </div>
     </div>
   );
 
@@ -99,6 +138,8 @@ function RoadmapPage({ user }: { user: User }) {
           {generating ? tr.generating : tr.regenerate}
         </button>
       </div>
+
+      {careerBar}
 
       {generateError && (
         <div style={{ background:'#fef2f2', border:'1px solid #fecaca', borderRadius:10, padding:'10px 14px', marginBottom:16, fontSize:13, color:'#dc2626' }}>

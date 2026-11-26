@@ -1179,6 +1179,10 @@ export const ar: Translation = {
         alertsTitle: '⚠️ نقاط تحتاج إلى انتباه',
         adviceTitle: '💡 نصائح',
         fetchError: 'تعذر تحميل خارطة الطريق.',
+        careerLabel: '🎯 ما هي المهنة أو المجال الذي يهمك؟',
+        careerPlaceholder: 'مثال: مهندس في الهندسة المدنية، الطب، المعلوميات…',
+        careerButton: '✨ إنشاء خارطة طريقي',
+        careerHint: 'أو استعمل «إعادة الإنشاء» دون كتابة أي شيء: سيختار الذكاء الاصطناعي حسب ملفك RIASEC ونقاطك.',
       },
       profile: {
         passwordTooShort: 'مطلوب على الأقل 6 أحرف',
