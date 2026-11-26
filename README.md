@@ -12,7 +12,7 @@ Avant de commencer, assurez-vous d'avoir installé :
 
 - [Node.js](https://nodejs.org) — version 18 ou plus récente
 - [MongoDB](https://www.mongodb.com) — base de données (locale ou Atlas)
-- Une clé API [Anthropic](https://console.anthropic.com) pour l'intelligence artificielle
+- Une clé API [OpenRouter](https://openrouter.ai/keys) pour l'intelligence artificielle (gratuite)
 
 ---
 
@@ -45,9 +45,10 @@ cp .env.example .env
 Ouvrez le fichier `.env` et modifiez les valeurs suivantes :
 
 ```env
-MONGO_URI=mongodb://localhost:27017/mytawjeh
+MONGODB_URI=mongodb://localhost:27017/my_tawjihe
 JWT_SECRET=mettez_une_cle_secrete_ici
-ANTHROPIC_API_KEY=sk-ant-...
+OPENROUTER_API_KEY=sk-or-v1-...
+OPENROUTER_MODEL=baidu/ernie-5.5-flash-preview:free
 PORT=5000
 ```
 
@@ -171,7 +172,7 @@ La plateforme prend en charge 3 langues, avec le RTL pour l'arabe :
 
 - [Node.js](https://nodejs.org) — الإصدار 18 أو أحدث
 - [MongoDB](https://www.mongodb.com) — قاعدة البيانات (محلي أو Atlas)
-- مفتاح API من [Anthropic](https://console.anthropic.com) للذكاء الاصطناعي
+- مفتاح API من [OpenRouter](https://openrouter.ai/keys) للذكاء الاصطناعي (مجاني)
 
 ---
 
@@ -204,9 +205,10 @@ cp .env.example .env
 افتح ملف `.env` وعدّل القيم التالية:
 
 ```env
-MONGO_URI=mongodb://localhost:27017/mytawjeh
+MONGODB_URI=mongodb://localhost:27017/my_tawjihe
 JWT_SECRET=ضع_مفتاحاً_سرياً_هنا
-ANTHROPIC_API_KEY=sk-ant-...
+OPENROUTER_API_KEY=sk-or-v1-...
+OPENROUTER_MODEL=baidu/ernie-5.5-flash-preview:free
 PORT=5000
 ```
 
