@@ -111,12 +111,8 @@ const executeWithFallback = async (providerName, executeFunc) => {
 // ROADMAP GENERATION
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-const generateRoadmap = async (eleve, notes, onetProfil = null, metierCible = '') => {
-  // Career/domain typed by the student takes priority over the RIASEC dream job
-  const objectifText = metierCible
-    ? `Métier ou domaine choisi par l'élève: ${metierCible}. Construis le roadmap pour CE choix (signale dans "alertes" s'il correspond mal à son profil).`
-    : '';
-
+// Student profile summary shared by roadmap + recommendations prompts
+const buildProfileText = (eleve, notes, onetProfil) => {
   const notesText = notes.length
     ? notes.map(n => `${n.matiere}: ${n.valeur}/20 (coeff ${n.coefficient})`).join(', ')
     : 'Aucune note disponible';
@@ -130,30 +126,86 @@ const generateRoadmap = async (eleve, notes, onetProfil = null, metierCible = ''
     ? `Profil RIASEC: ${onetProfil.primaryInterest} (primaire), ${onetProfil.secondaryInterest} (secondaire), ${onetProfil.tertiaryInterest} (tertiaire). Job Zone visée: ${onetProfil.jobZone}/5.${onetProfil.dreamJob ? ` Métier rêvé: ${onetProfil.dreamJob}.` : ''}${onetProfil.dreamUni ? ` Université rêvée: ${onetProfil.dreamUni}.` : ''}`
     : 'Profil RIASEC non disponible.';
 
-  const prompt = `Tu es un conseiller d'orientation académique expert du système marocain (Bac, CPGE, BTS, universités publiques, grandes écoles comme ENSA, ENCG, EHTP, EMI, ISCAE). Génère un roadmap professionnel personnalisé en JSON pour cet étudiant:\n\nNom: ${eleve.nom}\nNiveau: ${eleve.niveau}\nFilière: ${eleve.filiere || 'Non définie'}\nVille: ${eleve.ville || 'Non précisée'}\nMoyenne générale: ${moyenne ? moyenne + '/20' : 'Non disponible'}\nNotes détaillées: ${notesText}\n${onetText}\n${objectifText}\n\nRéponds UNIQUEMENT avec un JSON valide sans markdown:\n{"metier":"...","description":"...","etapes":["...","...","...","..."],"matieresCles":["...","..."],"universites":["...","..."],"conseils":"...","alertes":["..."]}`;
+  return `Nom: ${eleve.nom}
+Niveau: ${eleve.niveau}
+Filière: ${eleve.filiere || 'Non définie'}
+Ville: ${eleve.ville || 'Non précisée'}
+Moyenne générale: ${moyenne ? moyenne + '/20' : 'Non disponible'}
+Notes détaillées: ${notesText}
+${onetText}`;
+};
 
+// Parse the model's JSON, tolerating code fences or text around it
+const parseJsonReply = (text) => {
+  const cleaned = text.replace(/```json|```/g, '').trim();
+  try { return JSON.parse(cleaned); } catch (_) {}
+  const first = cleaned.indexOf('{');
+  const last = cleaned.lastIndexOf('}');
+  if (first >= 0 && last > first) return JSON.parse(cleaned.slice(first, last + 1));
+  throw new Error("Réponse de l'IA invalide (JSON attendu)");
+};
+
+// Send a single prompt and get JSON back, with provider fallback
+const askJson = (prompt) => {
   const primaryProvider = getPrimaryProvider();
-  
   return executeWithFallback(primaryProvider.name, async (client, name) => {
-    let response;
-    
     if (name === 'claude') {
-      response = await client.messages.create({
+      const response = await client.messages.create({
         model: getModelForProvider(name),
         max_tokens: 1024,
         messages: [{ role: 'user', content: prompt }],
       });
-      return JSON.parse(response.content[0].text.replace(/```json|```/g, '').trim());
-    } else {
-      response = await client.chat.completions.create({
-        model: getModelForProvider(name),
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.7,
-      });
-      const text = response.choices[0].message.content.replace(/```json|```/g, '').trim();
-      return JSON.parse(text);
+      return parseJsonReply(response.content[0].text);
     }
+    const response = await client.chat.completions.create({
+      model: getModelForProvider(name),
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.7,
+    });
+    return parseJsonReply(response.choices[0].message.content);
   });
+};
+
+const CONSEILLER = "Tu es un conseiller d'orientation académique expert du système marocain (Bac, CPGE, BTS, universités publiques, grandes écoles comme ENSA, ENCG, EHTP, EMI, ISCAE).";
+
+const generateRoadmap = async (eleve, notes, onetProfil = null, metierCible = '') => {
+  // Career/domain typed by the student takes priority over the RIASEC dream job
+  const objectifText = metierCible
+    ? `Métier ou domaine choisi par l'élève: ${metierCible}. Construis le roadmap pour CE choix (signale dans "alertes" s'il correspond mal à son profil).`
+    : '';
+
+  const prompt = `${CONSEILLER} Génère un roadmap professionnel personnalisé en JSON pour cet étudiant:
+
+${buildProfileText(eleve, notes, onetProfil)}
+${objectifText}
+
+Réponds UNIQUEMENT avec un JSON valide sans markdown:
+{"metier":"...","description":"...","etapes":["...","...","...","..."],"matieresCles":["...","..."],"universites":["...","..."],"conseils":"...","alertes":["..."]}`;
+
+  return askJson(prompt);
+};
+
+// 3 careers that fit the student's profile, for the student to choose from
+const recommendCareers = async (eleve, notes, onetProfil = null) => {
+  const prompt = `${CONSEILLER} À partir du profil ci-dessous, propose les 3 métiers les plus adaptés à cet étudiant, réalistes au Maroc, du plus adapté au moins adapté. Varie les domaines si le profil le permet.
+
+${buildProfileText(eleve, notes, onetProfil)}
+
+Réponds UNIQUEMENT avec un JSON valide sans markdown:
+{"recommandations":[{"metier":"...","domaine":"...","raison":"une phrase qui cite ses notes ou son profil RIASEC","score":85}]}
+"score" = compatibilité de 0 à 100.`;
+
+  const result = await askJson(prompt);
+  const list = Array.isArray(result?.recommandations) ? result.recommandations : [];
+  return list
+    .filter(r => r && typeof r.metier === 'string' && r.metier.trim())
+    .slice(0, 3)
+    .map(r => ({
+      metier: r.metier.trim(),
+      domaine: typeof r.domaine === 'string' ? r.domaine.trim() : '',
+      raison: typeof r.raison === 'string' ? r.raison.trim() : '',
+      score: Math.max(0, Math.min(100, Math.round(Number(r.score) || 0))),
+    }));
 };
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -243,6 +295,7 @@ const summarizeMessages = async (messagesToSummarize, studentContext) => {
 
 module.exports = {
   generateRoadmap,
+  recommendCareers,
   chatbot,
   summarizeMessages,
   getPrimaryProvider,

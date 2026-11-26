@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { User, apiFetch } from './shared';
 import { useTranslation } from '../i18n';
 
+// A career suggested by the AI from the student's profile
+interface Reco { metier: string; domaine: string; raison: string; score: number; }
+
 function RoadmapPage({ user }: { user: User }) {
   const t = useTranslation();
   const tr = t.dashboard.roadmap;
@@ -11,6 +14,10 @@ function RoadmapPage({ user }: { user: User }) {
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState('');
   const [metierCible, setMetierCible] = useState('');
+  const [recos, setRecos] = useState<Reco[] | null>(null);
+  const [loadingRecos, setLoadingRecos] = useState(false);
+  const [recoError, setRecoError] = useState('');
+  const busy = generating || loadingRecos;
 
   useEffect(() => {
     apiFetch(`/roadmap/${user.id}`)
@@ -24,17 +31,19 @@ function RoadmapPage({ user }: { user: User }) {
       .finally(() => setFetching(false));
   }, [user.id]);
 
-  const handleGenerate = async () => {
-    if (roadmap) {
+  // Generate the full roadmap for a career ('' = let the AI choose from the profile)
+  const generateFor = async (career: string, confirmFirst: boolean) => {
+    if (roadmap && confirmFirst) {
       const ok = window.confirm(tr.regenerateConfirm);
       if (!ok) return;
     }
+    setRecos(null);
     setGenerating(true);
     setGenerateError('');
     try {
       const data = await apiFetch('/roadmap/generate', {
         method: 'POST',
-        body: JSON.stringify({ metierCible: metierCible.trim() }),
+        body: JSON.stringify({ metierCible: career.trim() }),
       });
       if (data?.result) {
         setRoadmap(data.result);
@@ -47,6 +56,79 @@ function RoadmapPage({ user }: { user: User }) {
     }
   };
 
+  // "✨ Générer mon roadmap" in the top bar: the typed career
+  const handleGenerate = () => generateFor(metierCible, true);
+
+  // Régénérer / Générer: typed career -> generate directly; empty -> 3 recommended careers
+  const handleRegenerate = async () => {
+    if (metierCible.trim()) return generateFor(metierCible, true);
+    setLoadingRecos(true);
+    setRecoError('');
+    setRecos(null);
+    try {
+      const data = await apiFetch('/roadmap/recommendations', { method: 'POST', body: JSON.stringify({}) });
+      setRecos(data?.recommandations || []);
+    } catch (err: any) {
+      setRecoError(err?.message || tr.recoError);
+    } finally {
+      setLoadingRecos(false);
+    }
+  };
+
+  const pickReco = (r: Reco) => {
+    setMetierCible(r.metier);
+    generateFor(r.metier, false); // picking a card is already an explicit choice
+  };
+
+  // Recommended careers panel (shown after Régénérer with an empty box)
+  const recoPanel = (loadingRecos || recoError || recos) && (
+    <div className="dash-card p-5" style={{ marginBottom:16, borderColor:'rgba(124,58,237,0.2)', textAlign:'start' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:10, marginBottom:12 }}>
+        <div>
+          <h3 className="dash-section-title" style={{ margin:0 }}>{tr.recoTitle}</h3>
+          <p style={{ fontSize:12, color:'#94a3b8', marginTop:3 }}>{tr.recoDesc}</p>
+        </div>
+        {!loadingRecos && (
+          <button onClick={() => { setRecos(null); setRecoError(''); }} aria-label={tr.recoClose}
+            style={{ background:'none', border:'none', fontSize:18, color:'#94a3b8', cursor:'pointer', lineHeight:1 }}>✕</button>
+        )}
+      </div>
+
+      {loadingRecos && (
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:12 }}>
+          {[1,2,3].map(i => <div key={i} className="dash-skeleton" style={{ height:130, borderRadius:14 }} />)}
+        </div>
+      )}
+
+      {recoError && <p style={{ fontSize:13, color:'#dc2626' }}>{recoError}</p>}
+
+      {recos && (
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:12 }}>
+          {recos.map((r, i) => (
+            <button key={i} onClick={() => pickReco(r)} disabled={generating}
+              style={{
+                textAlign:'start', padding:16, borderRadius:14, background:'#fff', cursor: generating ? 'not-allowed' : 'pointer',
+                border: i === 0 ? '2px solid #a855f7' : '1.5px solid rgba(124,58,237,0.18)',
+                boxShadow:'0 2px 10px rgba(15,12,41,0.05)', display:'flex', flexDirection:'column', gap:8,
+              }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
+                <span style={{ fontSize:11, fontWeight:800, color:'#7c3aed', textTransform:'uppercase', letterSpacing:0.5 }}>
+                  {i === 0 ? tr.recoBest : r.domaine}
+                </span>
+                <span style={{ fontSize:12, fontWeight:900, color:'#fff', background:'linear-gradient(135deg,#7c3aed,#a855f7)', borderRadius:999, padding:'2px 9px' }}>
+                  {r.score}%
+                </span>
+              </div>
+              <span style={{ fontSize:15, fontWeight:900, color:'#0f0c29', lineHeight:1.3 }}>{r.metier}</span>
+              <span style={{ fontSize:12.5, color:'#64748b', lineHeight:1.5, flex:1 }}>{r.raison}</span>
+              <span style={{ fontSize:12, fontWeight:800, color:'#7c3aed' }}>{tr.recoPick} →</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   // Top bar: the student types the career/domain they want a roadmap for
   const careerBar = (
     <div className="dash-card p-4" style={{ marginBottom:16, borderColor:'rgba(124,58,237,0.15)', textAlign:'start' }}>
@@ -57,10 +139,10 @@ function RoadmapPage({ user }: { user: User }) {
         <input
           value={metierCible}
           onChange={(e) => setMetierCible(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !generating && metierCible.trim()) handleGenerate(); }}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !busy && metierCible.trim()) handleGenerate(); }}
           placeholder={tr.careerPlaceholder}
           maxLength={100}
-          disabled={generating}
+          disabled={busy}
           style={{
             flex:1, minWidth:220, padding:'10px 14px', fontSize:13.5,
             border:'1.5px solid rgba(124,58,237,0.25)', borderRadius:10, outline:'none', background:'#fff',
@@ -68,11 +150,11 @@ function RoadmapPage({ user }: { user: User }) {
         />
         <button
           onClick={handleGenerate}
-          disabled={generating || !metierCible.trim()}
+          disabled={busy || !metierCible.trim()}
           style={{
             padding:'10px 18px', border:'none', borderRadius:10, fontSize:13, fontWeight:800, color:'#fff',
-            background: generating || !metierCible.trim() ? '#c4b5fd' : 'linear-gradient(135deg,#7c3aed,#a855f7)',
-            cursor: generating || !metierCible.trim() ? 'not-allowed' : 'pointer',
+            background: busy || !metierCible.trim() ? '#c4b5fd' : 'linear-gradient(135deg,#7c3aed,#a855f7)',
+            cursor: busy || !metierCible.trim() ? 'not-allowed' : 'pointer',
           }}
         >
           {generating ? tr.generating : tr.careerButton}
@@ -92,6 +174,7 @@ function RoadmapPage({ user }: { user: User }) {
   if (fetchError || !roadmap) return (
     <div>
     {careerBar}
+    {recoPanel}
     <div className="dash-empty" style={{ background:'rgba(255,255,255,0.9)', borderRadius:20, padding:'60px 32px', textAlign:'center' }}>
       <div className="dash-empty-icon">🧭</div>
       <p className="dash-empty-title">{fetchError || tr.noRoadmapTitle}</p>
@@ -100,17 +183,17 @@ function RoadmapPage({ user }: { user: User }) {
         <p style={{ color:'#dc2626', fontSize:13, marginTop:12, maxWidth:400, margin:'12px auto 0' }}>{generateError}</p>
       )}
       <button
-        onClick={handleGenerate}
-        disabled={generating}
+        onClick={handleRegenerate}
+        disabled={busy}
         style={{
           marginTop:24, padding:'12px 28px',
-          background: generating ? '#c4b5fd' : 'linear-gradient(135deg,#7c3aed,#a855f7)',
+          background: busy ? '#c4b5fd' : 'linear-gradient(135deg,#7c3aed,#a855f7)',
           color:'#fff', border:'none', borderRadius:12,
-          fontSize:14, fontWeight:800, cursor: generating ? 'not-allowed' : 'pointer',
+          fontSize:14, fontWeight:800, cursor: busy ? 'not-allowed' : 'pointer',
           boxShadow:'0 8px 20px rgba(124,58,237,0.3)',
         }}
       >
-        {generating ? tr.generating : tr.generateNewButton}
+        {generating ? tr.generating : loadingRecos ? tr.recoLoading : tr.generateNewButton}
       </button>
     </div>
     </div>
@@ -124,22 +207,23 @@ function RoadmapPage({ user }: { user: User }) {
           <p style={{ fontSize:12, color:'#94a3b8', marginTop:3 }}>{tr.generatedNote}</p>
         </div>
         <button
-          onClick={handleGenerate}
-          disabled={generating}
+          onClick={handleRegenerate}
+          disabled={busy}
           style={{
             padding:'8px 16px',
-            background: generating ? '#f1f5f9' : '#f5f3ff',
-            color: generating ? '#94a3b8' : '#7c3aed',
+            background: busy ? '#f1f5f9' : '#f5f3ff',
+            color: busy ? '#94a3b8' : '#7c3aed',
             border:'1.5px solid rgba(124,58,237,0.25)',
             borderRadius:10, fontSize:12, fontWeight:800,
-            cursor: generating ? 'not-allowed' : 'pointer',
+            cursor: busy ? 'not-allowed' : 'pointer',
           }}
         >
-          {generating ? tr.generating : tr.regenerate}
+          {generating ? tr.generating : loadingRecos ? tr.recoLoading : tr.regenerate}
         </button>
       </div>
 
       {careerBar}
+      {recoPanel}
 
       {generateError && (
         <div style={{ background:'#fef2f2', border:'1px solid #fecaca', borderRadius:10, padding:'10px 14px', marginBottom:16, fontSize:13, color:'#dc2626' }}>

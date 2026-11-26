@@ -5,7 +5,7 @@ const schemas = require('../middleware/schemas');
 const { register, login, changePassword, linkStudent, unlinkStudent, getLinkedStudent, saveOnetProfile, getOnetProfile, getOnetProfileByEleveId } = require('../controllers/authController');
 const { getNotes, addNote, deleteNote } = require('../controllers/notesController');
 const { getExercices, submitExercice, chatWithExercice, createExercice, updateExercice, deleteExercice, approveExercice, getPendingExercices, getResultats } = require('../controllers/exercicesController');
-const { getRoadmap, generateRoadmapHandler, chatbotHandler, getChatHistory, resetChatHistory } = require('../controllers/aiController');
+const { getRoadmap, generateRoadmapHandler, recommendCareersHandler, chatbotHandler, getChatHistory, resetChatHistory } = require('../controllers/aiController');
 const { getConcours, createConcours, updateConcours, deleteConcours, getAnnales, createAnnale, updateAnnale, deleteAnnale } = require('../controllers/concoursController');
 const { getNotifications, getSentNotifications, createNotification, createBulkNotification, markRead, markUnread } = require('../controllers/notificationsController');
 const { getElevesFaibles, getProfStats } = require('../controllers/profController');
@@ -43,6 +43,7 @@ router.get('/exercices/resultats/:eleveId', auth(), getResultats);
 // AI
 router.get('/roadmap/:eleveId', auth(), getRoadmap);
 router.post('/roadmap/generate', auth(['eleve']), generateRoadmapHandler);
+router.post('/roadmap/recommendations', auth(['eleve']), recommendCareersHandler);
 router.post('/chatbot/message', auth(), chatbotHandler);
 router.get('/chatbot/history', auth(), getChatHistory);
 router.delete('/chatbot/history', auth(), resetChatHistory);

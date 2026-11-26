@@ -3,7 +3,7 @@ const Note = require('../models/Note');
 const Roadmap = require('../models/Roadmap');
 const ProfilOnet = require('../models/ProfilOnet');
 const ChatHistory = require('../models/ChatHistory');
-const { generateRoadmap, chatbot, summarizeMessages } = require('../services/aiService');
+const { generateRoadmap, recommendCareers, chatbot, summarizeMessages } = require('../services/aiService');
 
 // Sliding window config
 const WINDOW_SIZE = 10;       // full messages sent to AI
@@ -17,21 +17,44 @@ const getRoadmap = async (req, res) => {
   res.json(roadmap);
 };
 
+// Load the student, their grades and RIASEC profile (shared by roadmap handlers).
+// Sends the error response itself and returns null if the student can't be loaded.
+const loadStudentProfile = async (req, res) => {
+  // Security: eleve can only act on their own profile
+  const eleveId = req.user.role === 'eleve' ? req.user.id : req.body.eleveId;
+  if (!eleveId) { res.status(400).json({ message: 'eleveId requis' }); return null; }
+
+  const eleve = await Eleve.findById(eleveId).lean();
+  if (!eleve) { res.status(404).json({ message: 'Élève introuvable' }); return null; }
+
+  const notes = await Note.find({ eleveId: eleve._id }).lean();
+
+  let onetProfil = null;
+  try {
+    onetProfil = await ProfilOnet.findOne({ eleveId: eleve._id }).lean();
+  } catch (_) {}
+
+  return { eleve, notes, onetProfil };
+};
+
+// POST /roadmap/recommendations — 3 careers that fit the profile (nothing saved)
+const recommendCareersHandler = async (req, res) => {
+  try {
+    const profile = await loadStudentProfile(req, res);
+    if (!profile) return;
+    const recommandations = await recommendCareers(profile.eleve, profile.notes, profile.onetProfil);
+    if (!recommandations.length) return res.status(502).json({ message: "L'IA n'a renvoyé aucune recommandation. Réessayez." });
+    res.json({ recommandations });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+};
+
 const generateRoadmapHandler = async (req, res) => {
   try {
-    // Security: eleve can only generate their own roadmap
-    const eleveId = req.user.role === 'eleve' ? req.user.id : req.body.eleveId;
-    if (!eleveId) return res.status(400).json({ message: 'eleveId requis' });
-
-    const eleve = await Eleve.findById(eleveId).lean();
-    if (!eleve) return res.status(404).json({ message: 'Élève introuvable' });
-
-    const notes = await Note.find({ eleveId: eleve._id }).lean();
-
-    let onetProfil = null;
-    try {
-      onetProfil = await ProfilOnet.findOne({ eleveId: eleve._id }).lean();
-    } catch (_) {}
+    const profile = await loadStudentProfile(req, res);
+    if (!profile) return;
+    const { eleve, notes, onetProfil } = profile;
 
     // Optional career/domain typed by the student at the top of the Roadmap page
     const metierCible = typeof req.body.metierCible === 'string'
@@ -164,4 +187,4 @@ const resetChatHistory = async (req, res) => {
   }
 };
 
-module.exports = { getRoadmap, generateRoadmapHandler, chatbotHandler, getChatHistory, resetChatHistory };
+module.exports = { getRoadmap, generateRoadmapHandler, recommendCareersHandler, chatbotHandler, getChatHistory, resetChatHistory };
